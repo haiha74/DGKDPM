@@ -9,30 +9,41 @@ Máy tính cần cài đặt:
 - Git
 - VS Code / IntelliJ IDEA / Eclipse
 
-**Cấu trúc cơ bản của project:**
+## Cấu trúc cơ bản của Project
 
+```text
 Do_an_co_so/
 │
-├── pom.xml
-├── mvnw
-├── mvnw.cmd
-│
 ├── src/
-│   └── main/
-│       ├── java/com/dacs/fashion/
-│       │   ├── controller/
-│       │   ├── repository/
-│       │   ├── service/
-│       │   ├── config/
-│       │   │   └── DemoDataSeeder.java
-│       │   └── FashionApplication.java
-│       │
-│       └── resources/
-│           ├── application.properties
-│           ├── templates/
-│           └── static/
+│   ├── main/
+│   │   ├── java/com/dacs/fashion/
+│   │   │   ├── config/          # Cấu hình hệ thống, JWT, Seed Data
+│   │   │   ├── controller/      # Xử lý các HTTP Request/API
+│   │   │   ├── service/         # Xử lý logic nghiệp vụ
+│   │   │   ├── repository/      # Truy vấn cơ sở dữ liệu
+│   │   │   ├── entity/          # Các thực thể ánh xạ bảng MySQL
+│   │   │   ├── dto/             # Dữ liệu truyền giữa các lớp
+│   │   │   └── FashionApplication.java
+│   │   │
+│   │   └── resources/
+│   │       ├── static/          # CSS, JavaScript, hình ảnh
+│   │       ├── templates/       # Giao diện Thymeleaf
+│   │       └── application.properties
+│   │
+│   └── test/                    # Kiểm thử
 │
-└── README.md
+├── database/                    # Script cơ sở dữ liệu
+├── pom.xml                      # Cấu hình Maven và dependencies
+├── mvnw                         # Maven Wrapper cho Linux/macOS
+├── mvnw.cmd                     # Maven Wrapper cho Windows
+└── README.md                    # Hướng dẫn cài đặt và chạy
+```
+
+**Kiến trúc hoạt động:**
+
+`Frontend → Controller → Service → Repository → MySQL`
+
+Project sử dụng mô hình phân lớp, giúp dễ dàng quản lý, bảo trì và phát triển thêm chức năng.
 ## 2. Clone project
 
 Mở Terminal và chạy:
