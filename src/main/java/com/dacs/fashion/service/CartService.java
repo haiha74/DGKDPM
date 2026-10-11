@@ -11,6 +11,8 @@ import com.dacs.fashion.repository.ProductVariantRepository;
 import com.dacs.fashion.repository.UserRepository;
 
 import jakarta.transaction.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +28,9 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
     private final UserRepository userRepository;
     private final ProductVariantRepository variantRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
 
     /*
@@ -327,9 +332,7 @@ public class CartService {
          */
         if (quantity == null || quantity <= 0) {
 
-            cartItemRepository.delete(item);
-            cartItemRepository.flush();
-
+            removeItem(itemId);
             return getCart(userId);
         }
 
@@ -398,9 +401,24 @@ public class CartService {
                         )
                 );
 
-        cartItemRepository.delete(item);
+        // Xoa truc tiep theo cart_item_id thay vi phu thuoc vao
+        // collection orphanRemoval co the chua dong bo voi DB.
+        // Chi xoa dung dong da tim thay, va kiem tra so dong bi xoa.
+        int deleted = entityManager.createNativeQuery(
+                "DELETE FROM cart_items WHERE cart_item_id = :itemId AND cart_id = :cartId"
+        )
+                .setParameter("itemId", itemId)
+                .setParameter("cartId", item.getCart().getCartId())
+                .executeUpdate();
 
-        cartItemRepository.flush();
+        if (deleted != 1) {
+            throw new RuntimeException("Khong the xoa san pham khoi gio hang. Vui long thu lai.");
+        }
+
+        // Native DML bo qua persistence context. Clear de getCart()
+        // trong cung transaction doc lai du lieu thuc te tu database.
+        entityManager.flush();
+        entityManager.clear();
     }
 
 

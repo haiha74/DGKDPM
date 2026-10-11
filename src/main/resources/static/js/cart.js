@@ -20,7 +20,7 @@ function productImg(item){
 
 let cart = null;
 
-async function fetchCart() {
+async function fetchCart(throwOnError = false) {
   const user = getUser();
 
   if (!user || !user.token || !user.userId) {
@@ -72,6 +72,7 @@ async function fetchCart() {
       `${API_BASE}/cart/${user.userId}`,
       {
         method: "GET",
+        cache: "no-store",
 
         headers: {
           "Authorization": "Bearer " + user.token,
@@ -276,6 +277,7 @@ async function fetchCart() {
       lucide.createIcons();
 
     }
+    if (throwOnError) throw error;
   }
 }
 
@@ -471,33 +473,53 @@ async function updateQty(itemId, quantity){
 
   await fetchCart();
 }
+const deletingCartItemIds = new Set();
+
 async function removeItem(itemId){
-  if(!itemId){
-    alert("Không tìm thấy ID sản phẩm trong giỏ");
+  const id = Number(itemId);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    showToast("Thao tác thất bại", "Không tìm thấy ID sản phẩm trong giỏ", "error");
     return;
   }
+  if (deletingCartItemIds.has(id)) return;
 
   const ok = await showConfirm(
     "Xóa sản phẩm",
     "Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?"
-    );
+  );
+  if (!ok || deletingCartItemIds.has(id)) return;
 
-if(!ok) return;
+  deletingCartItemIds.add(id);
+  try {
+    const res = await fetch(`${API_BASE}/cart/items/${id}`, {
+      method: "DELETE",
+      headers: { ...userAuthHeaders(), "Accept": "application/json" },
+      cache: "no-store"
+    });
+    const raw = await res.text();
+    let data = {};
+    try { if (raw) data = JSON.parse(raw); } catch (_) {}
 
-  const res = await fetch(`${API_BASE}/cart/items/${itemId}`, {
-    method: "DELETE",
-    headers: userAuthHeaders()
-  });
+    if (!res.ok) {
+      const message = data?.message ||
+        (res.status === 401 ? "Phiên đăng nhập đã hết hạn." :
+         res.status === 403 ? "Bạn không có quyền xóa sản phẩm này." :
+         `Không thể xóa sản phẩm (HTTP ${res.status}).`);
+      throw new Error(message);
+    }
 
-  const data = await res.json().catch(()=>({}));
-
-  if(!res.ok){
-    showToast("Thao tác thất bại", data.message || "Xóa sản phẩm thất bại", "error");
-    return;
+    // Khong tin danh sach tren giao dien: lay moi tu server.
+    await fetchCart(true);
+    if (cart?.items?.some(item => Number(item.cartItemId) === id)) {
+      throw new Error("Máy chủ vẫn trả về sản phẩm đã xóa. Hãy kiểm tra API giỏ hàng.");
+    }
+    showToast("Đã xóa", "Sản phẩm đã được xóa khỏi giỏ hàng", "success");
+  } catch (error) {
+    console.error("REMOVE CART ITEM ERROR:", error);
+    showToast("Thao tác thất bại", error.message || "Không thể xóa sản phẩm", "error");
+  } finally {
+    deletingCartItemIds.delete(id);
   }
-
-  showToast("Đã xóa", "Sản phẩm đã được xóa khỏi giỏ hàng", "success");
-  await fetchCart();
 }
 
 function goToPayment() {
