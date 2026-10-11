@@ -108,7 +108,7 @@ Hoặc sử dụng Maven Wrapper trên Windows:
 Truy cập website:
 
 **http://localhost:8080/**
-**http://localhost:8080/admin**
+và **http://localhost:8080/admin**
 Khi khởi động, ứng dụng sẽ tự tạo database, các bảng và thêm dữ liệu mẫu nếu đáp ứng điều kiện seed.
 
 ## 5. Tài khoản Admin demo
