@@ -11,8 +11,6 @@ import com.dacs.fashion.repository.ProductVariantRepository;
 import com.dacs.fashion.repository.UserRepository;
 
 import jakarta.transaction.Transactional;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,9 +26,6 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
     private final UserRepository userRepository;
     private final ProductVariantRepository variantRepository;
-
-    @PersistenceContext
-    private EntityManager entityManager;
 
 
     /*
@@ -401,24 +396,21 @@ public class CartService {
                         )
                 );
 
-        // Xoa truc tiep theo cart_item_id thay vi phu thuoc vao
-        // collection orphanRemoval co the chua dong bo voi DB.
-        // Chi xoa dung dong da tim thay, va kiem tra so dong bi xoa.
-        int deleted = entityManager.createNativeQuery(
-                "DELETE FROM cart_items WHERE cart_item_id = :itemId AND cart_id = :cartId"
-        )
-                .setParameter("itemId", itemId)
-                .setParameter("cartId", item.getCart().getCartId())
-                .executeUpdate();
-
-        if (deleted != 1) {
-            throw new RuntimeException("Khong the xoa san pham khoi gio hang. Vui long thu lai.");
+        // Cart.items su dung orphanRemoval=true: xoa khoi collection
+        // de Hibernate dong bo ca quan he va ban ghi trong database.
+        Cart parentCart = item.getCart();
+        if (parentCart == null || parentCart.getItems() == null) {
+            throw new RuntimeException("Giỏ hàng không hợp lệ");
         }
 
-        // Native DML bo qua persistence context. Clear de getCart()
-        // trong cung transaction doc lai du lieu thuc te tu database.
-        entityManager.flush();
-        entityManager.clear();
+        boolean removed = parentCart.getItems().removeIf(
+                cartItem -> itemId.equals(cartItem.getCartItemId())
+        );
+        if (!removed) {
+            throw new RuntimeException("Sản phẩm không tồn tại trong giỏ hàng");
+        }
+
+        cartRepository.saveAndFlush(parentCart);
     }
 
 

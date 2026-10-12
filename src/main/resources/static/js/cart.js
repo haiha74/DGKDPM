@@ -473,52 +473,38 @@ async function updateQty(itemId, quantity){
 
   await fetchCart();
 }
-const deletingCartItemIds = new Set();
-
 async function removeItem(itemId){
-  const id = Number(itemId);
-  if (!Number.isSafeInteger(id) || id <= 0) {
+  if (!itemId) {
     showToast("Thao tác thất bại", "Không tìm thấy ID sản phẩm trong giỏ", "error");
     return;
   }
-  if (deletingCartItemIds.has(id)) return;
 
   const ok = await showConfirm(
     "Xóa sản phẩm",
     "Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?"
   );
-  if (!ok || deletingCartItemIds.has(id)) return;
+  if (!ok) return;
 
-  deletingCartItemIds.add(id);
   try {
-    const res = await fetch(`${API_BASE}/cart/items/${id}`, {
+    const res = await fetch(`${API_BASE}/cart/items/${itemId}`, {
       method: "DELETE",
-      headers: { ...userAuthHeaders(), "Accept": "application/json" },
+      headers: userAuthHeaders(),
       cache: "no-store"
     });
-    const raw = await res.text();
-    let data = {};
-    try { if (raw) data = JSON.parse(raw); } catch (_) {}
-
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const message = data?.message ||
-        (res.status === 401 ? "Phiên đăng nhập đã hết hạn." :
-         res.status === 403 ? "Bạn không có quyền xóa sản phẩm này." :
-         `Không thể xóa sản phẩm (HTTP ${res.status}).`);
-      throw new Error(message);
+      throw new Error(data.message || "Xóa sản phẩm thất bại");
     }
 
-    // Khong tin danh sach tren giao dien: lay moi tu server.
+    // Lay lai du lieu tu server truoc khi thong bao thanh cong.
     await fetchCart(true);
-    if (cart?.items?.some(item => Number(item.cartItemId) === id)) {
-      throw new Error("Máy chủ vẫn trả về sản phẩm đã xóa. Hãy kiểm tra API giỏ hàng.");
+    if (cart?.items?.some(item => String(item.cartItemId) === String(itemId))) {
+      throw new Error("Sản phẩm vẫn còn trong giỏ hàng sau khi xóa. Vui lòng thử lại.");
     }
     showToast("Đã xóa", "Sản phẩm đã được xóa khỏi giỏ hàng", "success");
   } catch (error) {
     console.error("REMOVE CART ITEM ERROR:", error);
     showToast("Thao tác thất bại", error.message || "Không thể xóa sản phẩm", "error");
-  } finally {
-    deletingCartItemIds.delete(id);
   }
 }
 
