@@ -1,24 +1,132 @@
-# Project website thoi trang - clone ve co san data DEMO
+# HƯỚNG DẪN CÀI ĐẶT VÀ CHẠY PROJECT
 
-## Clone / giai nen va chay
-1. Cai Java (kiem tra phien ban trong `pom.xml`), MySQL, Maven; khoi dong MySQL.
-2. Chay file `database/create_demo_database.sql` trong MySQL Workbench, hoac lenh:
-   `mysql -u root -p < database/create_demo_database.sql`
-3. Mo `src/main/resources/application.properties`. Mac dinh ket noi `localhost:3306/fashion_clone_demo`, username `root`, password rong. Sua DB_USERNAME va DB_PASSWORD theo tai khoan MySQL cua **ban**. Co the dat bien moi truong thay vi dua password len Git:
-   - Windows PowerShell: `$env:DB_USERNAME="root"; $env:DB_PASSWORD="mat-khau-cua-ban"`
-   - Linux/macOS: `export DB_USERNAME=root; export DB_PASSWORD='mat-khau-cua-ban'`
-   - Neu muon doi ten DB: dat `DB_NAME=ten_database_moi` va tu tao DB ten do.
-4. Khoi dong backend bang `mvn spring-boot:run` (hoac `mvnw.cmd spring-boot:run` tren Windows).
-5. Khi chay lan dau: Hibernate tao cac bang, sau do `DemoDataSeeder` tao san data demo; khong can import database cu. Lan chay sau giu nguyen data.
+## 1. Yêu cầu
 
-## Du lieu demo tu dong
-- `src/main/java/com/dacs/fashion/config/DemoDataSeeder.java` chua 10 ban ghi / nhom cho 15 nhom: brands, categories, products, product_images, product_variants, users, vouchers, orders, order_items, payments, shipments, reviews, carts, cart_items, product_views.
-- San pham, ten, gia, ton kho, voucher, don hang, user la du lieu GIA LAP; URL anh san pham Unsplash can internet de hien thi. Khong su dung du lieu that tu database goc.
-- Tai khoan test: `admin.demo@example.com`, `staff.demo@example.com`, `customer0.demo@example.com`...`customer7.demo@example.com` (8 khach); mat khau demo chung: `Demo@12345`. Chi dung de test, khong su dung cho production.
-- Seeder **chi chay neu database chua co brand/category/product/user/order**. Neu da co data se khong ghi de, khong xoa. Tat seeder bang `APP_SEED_ENABLED=false`.
-- Neu muon seed lai: dung mot database demo MOI rong, tao qua SQL script. KHONG xoa database co data quan trong.
+Máy tính cần cài đặt:
 
-## Tinh nang va cau hinh rieng
-- Chatbot da duoc loai bo trong ban project nay.
-- PayOS: **khong** dung key goc. Muon su dung thanh toan PayOS, tu cung cap `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY` cua rieng ban, sau do bat `PAYOS_ENABLED=true`. Mac dinh PayOS tat nen khong can key de khoi dong demo. Co the de trong khi demo chuc nang khong lien quan thanh toan; neu khoi dong gap loi PayOS, cau hinh key test cua ban.
-- Thay `JWT_SECRET` va mat khau demo truoc khi dua website len moi truong that.
+- Java JDK 17
+- MySQL Server
+- Git
+- VS Code / IntelliJ IDEA / Eclipse
+
+## Cấu trúc cơ bản của Project
+
+```text
+Do_an_co_so/
+│
+├── src/
+│   ├── main/
+│   │   ├── java/com/dacs/fashion/
+│   │   │   ├── config/          # Cấu hình hệ thống, JWT, Seed Data
+│   │   │   ├── controller/      # Xử lý các HTTP Request/API
+│   │   │   ├── service/         # Xử lý logic nghiệp vụ
+│   │   │   ├── repository/      # Truy vấn cơ sở dữ liệu
+│   │   │   ├── entity/          # Các thực thể ánh xạ bảng MySQL
+│   │   │   ├── dto/             # Dữ liệu truyền giữa các lớp
+│   │   │   └── FashionApplication.java
+│   │   │
+│   │   └── resources/
+│   │       ├── static/          # CSS, JavaScript, hình ảnh
+│   │       ├── templates/       # Giao diện Thymeleaf
+│   │       └── application.properties
+│   │
+│   └── test/                    # Kiểm thử
+│
+├── database/                    # Script cơ sở dữ liệu
+├── pom.xml                      # Cấu hình Maven và dependencies
+├── mvnw                         # Maven Wrapper cho Linux/macOS
+├── mvnw.cmd                     # Maven Wrapper cho Windows
+└── README.md                    # Hướng dẫn cài đặt và chạy
+```
+
+**Kiến trúc hoạt động:**
+
+`Frontend → Controller → Service → Repository → MySQL`
+
+Project sử dụng mô hình phân lớp, giúp dễ dàng quản lý, bảo trì và phát triển thêm chức năng.
+## 2. Clone project
+
+Mở Terminal và chạy:
+
+```bash
+git clone https://github.com/haiha74/DGKDPM.git
+cd DGKDPM
+```
+
+Mở project bằng VS Code:
+
+```bash
+code .
+```
+
+## 3. Cấu hình Database
+
+Mở file:
+
+`src/main/resources/application.properties`
+
+Nếu file nằm trong thư mục `Do_an_co_so`, mở file theo đường dẫn tương ứng trong thư mục đó.
+
+Cấu hình:
+
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/${DB_NAME:fashion_clone_demo}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+
+spring.datasource.username=${DB_USERNAME:root}
+spring.datasource.password=${DB_PASSWORD:}
+
+spring.jpa.hibernate.ddl-auto=update
+app.seed.enabled=true
+```
+
+**Giải thích:**
+- `username`: Tên đăng nhập MySQL, mặc định `root`.
+- `password`: Mật khẩu MySQL trên máy cá nhân, mặc định để trống.
+- `fashion_clone_demo`: Tên database được sử dụng.
+- `createDatabaseIfNotExist=true`: Tự tạo database nếu chưa có và tài khoản MySQL đủ quyền.
+- `ddl-auto=update`: Tự tạo và cập nhật bảng.
+- `app.seed.enabled=true`: Bật dữ liệu mẫu.
+
+**Lưu ý:** Mỗi người sử dụng MySQL riêng trên máy mình, không dùng database gốc. Không commit mật khẩu MySQL lên GitHub.
+
+## 4. Khởi động project
+
+Đảm bảo MySQL Server đang chạy.
+
+Mở Terminal tại thư mục chứa `pom.xml`, chạy:
+
+```bash
+mvn spring-boot:run
+```
+
+Hoặc sử dụng Maven Wrapper trên Windows:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+Truy cập website:
+
+**http://localhost:8080/**
+và **http://localhost:8080/admin**
+Khi khởi động, ứng dụng sẽ tự tạo database, các bảng và thêm dữ liệu mẫu nếu đáp ứng điều kiện seed.
+
+## 5. Tài khoản Admin demo
+**http://localhost:8080/admin**
+| Thông tin | Giá trị |
+|---|---|
+| Email | admin@gmail.com |
+| Mật khẩu | 123456 |
+| Quyền | ADMIN |
+
+Tài khoản này chỉ dùng để demo và kiểm thử.
+
+## 6. Lỗi thường gặp
+
+- **Access denied:** Sai username hoặc password MySQL.
+- **Communications link failure:** MySQL Server chưa chạy hoặc sai cổng.
+- **Unknown database:** Kiểm tra `createDatabaseIfNotExist=true` và quyền tạo database.
+- **Port 8080 already in use:** Cổng 8080 đang bị ứng dụng khác sử dụng.
+- **Không có dữ liệu mẫu:** Kiểm tra `app.seed.enabled=true` và log khi khởi động.
+
+**Lưu ý:** Không cần import database thủ công nếu MySQL đã được cấu hình đúng và tài khoản có quyền tạo database.
